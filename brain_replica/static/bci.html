@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Motor Imagery BCI</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Source+Serif+Pro:wght@300;400;600&display=swap');
+
+    body {
+      margin: 0;
+      background: #000000;
+      font-family: 'Source Serif Pro', Georgia, serif;
+      overflow: hidden;
+      color: #ffffff;
+    }
+
+    canvas { display: block; }
+
+    #controls, #decode-panel {
+      position: absolute;
+      top: 30px;
+      background: rgba(255, 255, 255, 0.98);
+      color: #000000;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      max-width: 320px;
+      z-index: 1000;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    #controls { left: 30px; }
+    #decode-panel { right: 30px; width: 280px; }
+
+    .control-section { margin-bottom: 20px; }
+
+    .control-section h3 {
+      margin: 0 0 15px 0;
+      color: #000000;
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #000000;
+      padding-bottom: 8px;
+    }
+
+    .control-section p {
+      margin: 0 0 12px 0;
+      font-size: 14px;
+      line-height: 1.5;
+      color: #333;
+    }
+
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin: 10px 0;
+      font-size: 14px;
+      gap: 12px;
+    }
+
+    .metric .label { color: #666; }
+    .metric .value { font-weight: 600; color: #000; }
+
+    #pred-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    #pred-value.left { color: #1a5fb4; }
+    #pred-value.right { color: #c64600; }
+    #pred-value.rest { color: #666; }
+
+    .bar-track {
+      height: 8px;
+      background: #eeeeee;
+      border-radius: 4px;
+      margin: 4px 0 12px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      background: #000000;
+      border-radius: 4px;
+      transition: width 0.15s ease;
+    }
+    .bar-fill.left { background: #1a5fb4; }
+    .bar-fill.right { background: #c64600; }
+    .bar-fill.rest { background: #888888; }
+    .bar-fill.conf { background: #000000; }
+
+    .nav-btn {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      margin: 8px 0 0;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #000000;
+      cursor: pointer;
+      font-family: 'Source Serif Pro', serif;
+      font-size: 14px;
+      text-align: left;
+      text-decoration: none;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+    }
+    .nav-btn:hover {
+      background: #f8f8f8;
+      border-color: #000000;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .intent-pill {
+      display: inline-block;
+      padding: 6px 12px;
+      margin: 4px 4px 4px 0;
+      border-radius: 8px;
+      background: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      font-size: 13px;
+      color: #333;
+    }
+    .intent-pill.active-left {
+      background: #000000;
+      color: #ffffff;
+      border-color: #000000;
+    }
+    .intent-pill.active-right {
+      background: #000000;
+      color: #ffffff;
+      border-color: #000000;
+    }
+    .intent-pill.active-rest {
+      background: #000000;
+      color: #ffffff;
+      border-color: #000000;
+    }
+
+    #status {
+      position: absolute;
+      bottom: 30px;
+      left: 30px;
+      background: rgba(0, 0, 0, 0.9);
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-family: 'Source Serif Pro', serif;
+      font-size: 14px;
+      z-index: 1000;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      max-width: calc(100vw - 60px);
+    }
+
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ffffff;
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      z-index: 1000;
+      letter-spacing: 1px;
+    }
+
+    #cursor-hud {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      background: rgba(255, 255, 255, 0.98);
+      color: #000000;
+      padding: 20px 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      z-index: 1000;
+      min-width: 260px;
+    }
+
+    #cursor-hud h3 {
+      margin: 0 0 12px 0;
+      font-family: 'Playfair Display', serif;
+      font-size: 16px;
+      font-weight: 600;
+      border-bottom: 2px solid #000000;
+      padding-bottom: 8px;
+    }
+
+    .track {
+      position: relative;
+      height: 36px;
+      background: #f0f0f0;
+      border-radius: 8px;
+      margin-top: 8px;
+      border: 1px solid #e0e0e0;
+    }
+    .track-end {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      color: #666;
+      letter-spacing: 0.3px;
+    }
+    .track-end.left { left: 10px; }
+    .track-end.right { right: 10px; }
+    .track-knob {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 18px;
+      height: 18px;
+      margin: -9px 0 0 -9px;
+      background: #000000;
+      border-radius: 4px;
+      transition: background 0.2s ease;
+    }
+    .track-knob.left { background: #1a5fb4; }
+    .track-knob.right { background: #c64600; }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading">Loading 3D Brain Model...</div>
+
+  <div id="controls">
+    <div class="control-section">
+      <h3>Motor Imagery BCI</h3>
+      <p>Live CSP + LDA decode from an LSL EEG stream. Imagined fist movement drives the cortex highlight and cursor.</p>
+      <div style="margin-top: 8px;">
+        <span class="intent-pill" id="pill-left">Left fist</span>
+        <span class="intent-pill" id="pill-right">Right fist</span>
+        <span class="intent-pill" id="pill-rest">Rest</span>
+      </div>
+    </div>
+    <a class="nav-btn" href="/">← Region explorer</a>
+  </div>
+
+  <div id="decode-panel">
+    <div class="control-section">
+      <h3>Live Decode</h3>
+      <div class="metric">
+        <span class="label">Prediction</span>
+        <span id="pred-value" class="rest">—</span>
+      </div>
+      <div class="metric">
+        <span class="label">Confidence</span>
+        <span class="value" id="conf-value">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill conf" id="conf-bar"></div></div>
+
+      <div class="metric"><span class="label">Left</span><span class="value" id="p-left">—</span></div>
+      <div class="bar-track"><div class="bar-fill left" id="bar-left"></div></div>
+      <div class="metric"><span class="label">Right</span><span class="value" id="p-right">—</span></div>
+      <div class="bar-track"><div class="bar-fill right" id="bar-right"></div></div>
+      <div class="metric"><span class="label">Rest</span><span class="value" id="p-rest">—</span></div>
+      <div class="bar-track"><div class="bar-fill rest" id="bar-rest"></div></div>
+
+      <div class="metric">
+        <span class="label">Rolling accuracy</span>
+        <span class="value" id="acc-value">—</span>
+      </div>
+      <div class="metric">
+        <span class="label">Marker</span>
+        <span class="value" id="marker-value">—</span>
+      </div>
+      <div class="metric">
+        <span class="label">C3 / C4 power</span>
+        <span class="value" id="power-value">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div id="cursor-hud">
+    <h3>Cursor Control</h3>
+    <div class="track">
+      <span class="track-end left">LEFT</span>
+      <span class="track-end right">RIGHT</span>
+      <div class="track-knob" id="track-knob"></div>
+    </div>
+  </div>
+
+  <div id="status">Connecting to decoder…</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.144.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.144.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.144.0/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+    const MOTOR = {
+      leftHand:  ["Right Frontal Lobe", "Right Parietal Lobe"],
+      rightHand: ["Left Frontal Lobe", "Left Parietal Lobe"],
+    };
+
+    const regionToMeshIndex = {
+      "Cerebellum": 5,
+      "Left Occipital Lobe": 23,
+      "Right Occipital Lobe": 22,
+      "Left Temporal Lobe": 4,
+      "Right Temporal Lobe": 13,
+      "Left Parietal Lobe": 28,
+      "Right Parietal Lobe": 25,
+      "Left Frontal Lobe": 14,
+      "Right Frontal Lobe": 9,
+      "Brain Stem": 18,
+      "Pituitary Gland": 24,
+    };
+
+    // Same pastel palette as index.html
+    const regionColors = {
+      "Cerebellum": [0.8, 0.7, 1.0],
+      "Left Occipital Lobe": [0.7, 0.9, 1.0],
+      "Right Occipital Lobe": [0.7, 1.0, 0.8],
+      "Left Temporal Lobe": [1.0, 0.6, 0.5],
+      "Right Temporal Lobe": [1.0, 0.7, 0.8],
+      "Left Parietal Lobe": [0.8, 1.0, 0.7],
+      "Right Parietal Lobe": [1.0, 1.0, 0.7],
+      "Left Frontal Lobe": [0.7, 0.8, 1.0],
+      "Right Frontal Lobe": [1.0, 0.85, 0.7],
+      "Brain Stem": [0.9, 0.7, 1.0],
+      "Pituitary Gland": [1.0, 0.7, 0.95],
+    };
+
+    let scene, camera, renderer, controls, brain;
+    let brainMeshes = [];
+    let targetX = 0;
+    let cursorX = 0;
+    let latest = null;
+    let glowIntensity = { leftHand: 0, rightHand: 0 };
+    let pulseTime = 0;
+
+    const WS_URL = `ws://${location.hostname || 'localhost'}:8765`;
+
+    function init() {
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
+
+      camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.01,
+        1000
+      );
+      camera.position.set(0, 0, 0.025);
+      camera.lookAt(0, 0, 0);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.body.appendChild(renderer.domElement);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(10, 10, 5);
+      directionalLight.castShadow = true;
+      scene.add(directionalLight);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+
+      loadBrainModel();
+      connectWS();
+      animate();
+    }
+
+    function getRegionColor(meshIndex) {
+      for (const [regionName, index] of Object.entries(regionToMeshIndex)) {
+        if (index === meshIndex) return regionColors[regionName];
+      }
+      return [0.85, 0.85, 0.85];
+    }
+
+    function loadBrainModel() {
+      const loader = new THREE.GLTFLoader();
+      loader.load(
+        "/static/brain.gltf",
+        function (gltf) {
+          brain = gltf.scene;
+          brain.traverse(function (child) {
+            if (!child.isMesh) return;
+            child.geometry.computeVertexNormals();
+            child.userData.originalMaterial = child.material.clone();
+
+            const meshIndex = brainMeshes.length;
+            const color = getRegionColor(meshIndex);
+            child.material = new THREE.MeshStandardMaterial({
+              color: new THREE.Color(color[0], color[1], color[2]),
+              roughness: 0.3,
+              metalness: 0.1,
+              transparent: true,
+              opacity: 0.9,
+            });
+            child.castShadow = true;
+            child.receiveShadow = true;
+            child.userData.baseColor = color;
+            child.userData.regionName = Object.entries(regionToMeshIndex)
+              .find(([, i]) => i === meshIndex)?.[0] || null;
+            brainMeshes.push(child);
+          });
+
+          brain.scale.set(0.1, 0.1, 0.1);
+          brain.position.set(0, 0, 0);
+          scene.add(brain);
+
+          document.getElementById('loading').style.display = 'none';
+          updateStatus('Brain model loaded — waiting for decoder');
+        },
+        function (xhr) {
+          if (xhr.total) {
+            updateStatus(`Loading brain model: ${Math.round(xhr.loaded / xhr.total * 100)}%`);
+          }
+        },
+        function (error) {
+          console.error(error);
+          document.getElementById('loading').textContent = 'Error loading brain model';
+          updateStatus('Error loading brain model');
+        }
+      );
+    }
+
+    function updateStatus(message) {
+      document.getElementById('status').textContent = message;
+    }
+
+    function connectWS() {
+      updateStatus('Connecting to decoder on :8765…');
+      const ws = new WebSocket(WS_URL);
+
+      ws.onopen = () => updateStatus('Live — CSP+LDA decode streaming');
+      ws.onclose = () => {
+        updateStatus('Decoder disconnected — reconnecting…');
+        setTimeout(connectWS, 1500);
+      };
+      ws.onerror = () => updateStatus('Decoder connection error');
+      ws.onmessage = (ev) => {
+        try {
+          const msg = JSON.parse(ev.data);
+          if (msg.type === 'prediction') applyPrediction(msg);
+        } catch (e) {
+          console.warn('bad message', e);
+        }
+      };
+    }
+
+    function applyPrediction(msg) {
+      latest = msg;
+      const pred = msg.prediction || 'rest';
+      const conf = msg.confidence || 0;
+
+      const predEl = document.getElementById('pred-value');
+      predEl.textContent = pred.charAt(0).toUpperCase() + pred.slice(1);
+      predEl.className = pred;
+
+      document.getElementById('conf-value').textContent = (conf * 100).toFixed(0) + '%';
+      document.getElementById('conf-bar').style.width = (conf * 100) + '%';
+
+      const probs = msg.probs || {};
+      ['left', 'right', 'rest'].forEach((k) => {
+        const p = probs[k] ?? 0;
+        document.getElementById('p-' + k).textContent = (p * 100).toFixed(0) + '%';
+        document.getElementById('bar-' + k).style.width = (p * 100) + '%';
+      });
+
+      const acc = msg.rolling_accuracy;
+      document.getElementById('acc-value').textContent =
+        acc == null ? '—' : ((acc * 100).toFixed(0) + '%  (' + (msg.n_scored || 0) + ' trials)');
+
+      document.getElementById('marker-value').textContent = msg.marker || '—';
+
+      const bp = msg.band_power || {};
+      const c3 = bp.C3 != null ? bp.C3.toFixed(1) : '—';
+      const c4 = bp.C4 != null ? bp.C4.toFixed(1) : '—';
+      document.getElementById('power-value').textContent = c3 + ' / ' + c4;
+
+      ['left', 'right', 'rest'].forEach((k) => {
+        const el = document.getElementById('pill-' + k);
+        el.className = 'intent-pill' + (pred === k ? ' active-' + k : '');
+      });
+
+      const dir = pred === 'left' ? -1 : pred === 'right' ? 1 : 0;
+      targetX = dir * Math.max(0.25, conf);
+
+      glowIntensity.leftHand = pred === 'left' ? conf : glowIntensity.leftHand * 0.45;
+      glowIntensity.rightHand = pred === 'right' ? conf : glowIntensity.rightHand * 0.45;
+      if (pred === 'rest') {
+        glowIntensity.leftHand *= 0.35;
+        glowIntensity.rightHand *= 0.35;
+      }
+
+      const marker = msg.marker ? ` · marker ${msg.marker}` : '';
+      const accStr = acc == null ? '' : ` · acc ${(acc * 100).toFixed(0)}%`;
+      updateStatus(`Prediction: ${pred} (${(conf * 100).toFixed(0)}%)${marker}${accStr}`);
+    }
+
+    function resetMeshMaterial(mesh) {
+      const base = mesh.userData.baseColor || [0.85, 0.85, 0.85];
+      mesh.material = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(base[0], base[1], base[2]),
+        roughness: 0.3,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0.9,
+        wireframe: false,
+      });
+    }
+
+    function updateMotorHighlight() {
+      const active = new Map();
+      MOTOR.leftHand.forEach((r) => active.set(r, glowIntensity.leftHand));
+      MOTOR.rightHand.forEach((r) => {
+        active.set(r, Math.max(active.get(r) || 0, glowIntensity.rightHand));
+      });
+
+      pulseTime += 0.04;
+      const pulse = 0.55 + 0.45 * Math.sin(pulseTime * 6);
+
+      brainMeshes.forEach((mesh) => {
+        const name = mesh.userData.regionName;
+        const base = mesh.userData.baseColor;
+        if (!name) return;
+
+        const g = active.get(name) || 0;
+        if (g > 0.08) {
+          // Match index.html wireframe highlight style
+          const intensity = pulse * g;
+          const isLeftHand = MOTOR.leftHand.includes(name);
+          const tint = isLeftHand
+            ? [0.25 + 0.75 * intensity, 0.55 + 0.45 * intensity, 1.0]
+            : [1.0, 0.45 + 0.4 * intensity, 0.2 + 0.2 * intensity];
+
+          mesh.material = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(tint[0], tint[1], tint[2]),
+            roughness: 0.2,
+            metalness: 0.3,
+            transparent: true,
+            opacity: 1.0,
+            wireframe: true,
+            wireframeLinewidth: 3,
+          });
+        } else if (mesh.material && mesh.material.wireframe) {
+          resetMeshMaterial(mesh);
+        } else if (mesh.material && base) {
+          mesh.material.color.setRGB(base[0], base[1], base[2]);
+          mesh.material.opacity = 0.9;
+          mesh.material.wireframe = false;
+        }
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+
+      cursorX += (targetX - cursorX) * 0.12;
+      const knob = document.getElementById('track-knob');
+      if (knob) {
+        // Map -1..1 → 12%..88% of track width
+        const pct = 50 + cursorX * 38;
+        knob.style.left = pct + '%';
+        knob.className = 'track-knob' + (
+          latest && latest.prediction !== 'rest' ? ' ' + latest.prediction : ''
+        );
+      }
+
+      glowIntensity.leftHand *= 0.985;
+      glowIntensity.rightHand *= 0.985;
+      if (brainMeshes.length) updateMotorHighlight();
+
+      renderer.render(scene, camera);
+    }
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    init();
+  </script>
+</body>
+</html>

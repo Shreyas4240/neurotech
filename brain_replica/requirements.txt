@@ -1,0 +1,10 @@
+fastapi
+uvicorn[standard]
+python-multipart
+websockets
+aiofiles
+requests
+python-dotenv
+huggingface_hub
+transformers
+torch

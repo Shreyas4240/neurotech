@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>3D Brain Visualization</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Source+Serif+Pro:wght@300;400;600&display=swap');
+    
+    body { 
+      margin: 0; 
+      background: #000000;
+      font-family: 'Source Serif Pro', Georgia, serif;
+      overflow: hidden;
+      color: #ffffff;
+    }
+    
+    #controls {
+      position: absolute;
+      top: 30px;
+      left: 30px;
+      background: rgba(255, 255, 255, 0.98);
+      color: #000000;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      max-width: 320px;
+      z-index: 1000;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    #pathway-controls {
+      position: absolute;
+      top: 30px;
+      right: 30px;
+      background: rgba(255, 255, 255, 0.98);
+      color: #000000;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      max-width: 320px;
+      z-index: 1000;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    /* Ensure pathway controls don't overlap with chatbot */
+    @media (min-height: 800px) {
+      #pathway-controls {
+        top: 30px;
+      }
+      #chatbot {
+        bottom: 30px;
+      }
+    }
+    
+    @media (max-height: 799px) {
+      #pathway-controls {
+        top: 30px;
+      }
+      #chatbot {
+        bottom: 30px;
+        max-height: 250px;
+      }
+    }
+    
+    #chatbot {
+      position: absolute;
+      bottom: 30px;
+      right: 30px;
+      background: rgba(255, 255, 255, 0.98);
+      color: #000000;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      max-width: 380px;
+      z-index: 1000;
+      max-height: 300px;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .control-section {
+      margin-bottom: 25px;
+    }
+    
+    .control-section h3 {
+      margin: 0 0 15px 0;
+      color: #000000;
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid #000000;
+      padding-bottom: 8px;
+    }
+    
+    .region-btn, .pathway-btn {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      margin: 8px 0;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #000000;
+      cursor: pointer;
+      font-family: 'Source Serif Pro', serif;
+      font-size: 14px;
+      font-weight: 400;
+      transition: all 0.3s ease;
+      text-align: left;
+    }
+    
+    .region-btn:hover, .pathway-btn:hover {
+      background: #f8f8f8;
+      border-color: #000000;
+      transform: translateY(-1px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    
+    .region-btn.active {
+      background: #000000;
+      color: #ffffff;
+      border-color: #000000;
+    }
+    
+    .pathway-btn.active {
+      background: #000000;
+      color: #ffffff;
+      border-color: #000000;
+    }
+    
+    #stop-btn {
+      background: #000000;
+      color: #ffffff;
+      border: 1px solid #000000;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Source Serif Pro', serif;
+      font-size: 14px;
+      font-weight: 600;
+      width: 100%;
+      margin-top: 15px;
+      transition: all 0.3s ease;
+    }
+    
+    #stop-btn:hover {
+      background: #ffffff;
+      color: #f3f0f0;
+    }
+    
+    .chat-message {
+      margin: 12px 0;
+      padding: 12px 16px;
+      border-radius: 8px;
+      max-width: 85%;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    
+    .chat-user {
+      background: #000000;
+      color: #ffffff;
+      margin-left: auto;
+      text-align: right;
+    }
+    
+    .chat-bot {
+      background: #f5f5f5;
+      color: #000000;
+      border-left: 3px solid #000000;
+    }
+    
+    #chat-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-top: 15px;
+      font-family: 'Source Serif Pro', serif;
+      font-size: 14px;
+      box-sizing: border-box;
+      transition: border-color 0.3s ease;
+    }
+    
+    #chat-input:focus {
+      outline: none;
+      border-color: #000000;
+    }
+    
+    #chat-send {
+      background: #000000;
+      color: #ffffff;
+      border: 1px solid #000000;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-family: 'Source Serif Pro', serif;
+      font-size: 14px;
+      font-weight: 600;
+      margin-top: 10px;
+      transition: all 0.3s ease;
+    }
+    
+    #chat-send:hover {
+      background: #ffffff;
+      color: #000000;
+    }
+    
+    #status {
+      position: absolute;
+      bottom: 30px;
+      left: 30px;
+      background: rgba(0, 0, 0, 0.9);
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-family: 'Source Serif Pro', serif;
+      font-size: 14px;
+      z-index: 1000;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ffffff;
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      z-index: 1000;
+      letter-spacing: 1px;
+    }
+    
+    /* Custom scrollbar for chatbot */
+    #chatbot::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    #chatbot::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    #chatbot::-webkit-scrollbar-thumb {
+      background: #000000;
+      border-radius: 3px;
+    }
+    
+    #chatbot::-webkit-scrollbar-thumb:hover {
+      background: #333333;
+    }
+    
+    .control-section {
+      margin-bottom: 20px;
+    }
+    
+    .control-section h3 {
+      margin: 0 0 10px 0;
+      color: #333;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    
+    .region-btn, .pathway-btn {
+      display: block;
+      width: 100%;
+      padding: 8px 12px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 8px;
+      background: #000000;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .region-btn:hover, .pathway-btn:hover {
+      background: #333333;
+      transform: translateY(-2px);
+    }
+    
+    .region-btn.active {
+      background: #000000;
+    }
+    
+    .pathway-btn.active {
+      background: #000000;
+    }
+    
+    #stop-btn {
+      background: #8a0808;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      width: 100%;
+      margin-top: 10px;
+    }
+    
+    #stop-btn:hover {
+      background: #470101;
+    }
+    
+    #status {
+      position: absolute;
+      bottom: 30px;
+      left: 30px;
+      background: rgba(0, 0, 0, 0.9);
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-family: 'Source Serif Pro', serif;
+      font-size: 14px;
+      z-index: 1000;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ffffff;
+      font-family: 'Playfair Display', serif;
+      font-size: 20px;
+      z-index: 1000;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading" class="loading">Loading 3D Brain Model...</div>
+  
+      <div id="controls">
+      <div class="control-section">
+        <h3>Brain Regions</h3>
+        <button class="region-btn" onclick="highlightRegion('Cerebellum')">Cerebellum</button>
+        <button class="region-btn" onclick="highlightRegion('Left Occipital Lobe')">Left Occipital Lobe</button>
+        <button class="region-btn" onclick="highlightRegion('Right Occipital Lobe')">Right Occipital Lobe</button>
+        <button class="region-btn" onclick="highlightRegion('Left Temporal Lobe')">Left Temporal Lobe</button>
+        <button class="region-btn" onclick="highlightRegion('Right Temporal Lobe')">Right Temporal Lobe</button>
+        <button class="region-btn" onclick="highlightRegion('Left Parietal Lobe')">Left Parietal Lobe</button>
+        <button class="region-btn" onclick="highlightRegion('Right Parietal Lobe')">Right Parietal Lobe</button>
+        <button class="region-btn" onclick="highlightRegion('Left Frontal Lobe')">Left Frontal Lobe</button>
+        <button class="region-btn" onclick="highlightRegion('Right Frontal Lobe')">Right Frontal Lobe</button>
+        <button class="region-btn" onclick="highlightRegion('Brain Stem')">Brain Stem</button>
+        <button class="region-btn" onclick="highlightRegion('Pituitary Gland')">Pituitary Gland</button>
+      </div>
+      
+      <button id="stop-btn" onclick="stopAnimation()">⏹ Stop Animation</button>
+    </div>
+    
+    <div id="pathway-controls">
+      <div class="control-section">
+        <h3>Neural Pathways</h3>
+        <button class="pathway-btn" onclick="animatePathway('listening')">🎧 Listening Pathway</button>
+        <button class="pathway-btn" onclick="animatePathway('speaking')">🗣 Speaking Pathway</button>
+        <button class="pathway-btn" onclick="animatePathway('thinking')">🧠 Thinking Pathway</button>
+      </div>
+    </div>
+    
+    <div id="chatbot">
+      <h3>🧠 Brain Assistant</h3>
+      <div id="chat-messages">
+        <div class="chat-message chat-bot">
+          Hello! I'm your brain visualization assistant. Ask me anything about the brain, neuroscience, or how to use this visualization!
+        </div>
+      </div>
+      <input type="text" id="chat-input" placeholder="Ask me about the brain..." onkeypress="handleChatKeyPress(event)">
+      <button id="chat-send" onclick="sendChatMessage()">Send Message</button>
+    </div>
+  
+  <div id="status">Ready</div>
+
+  <!-- Load Three.js and dependencies -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.144.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.144.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.144.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <script>
+    let scene, camera, renderer, controls, brain;
+    let brainMeshes = [];
+    let currentAnimation = null;
+    let highlightedRegion = null;
+    
+    // Original region-to-mesh mapping from mesh_download.py
+    const regionToMeshIndex = {
+      "Cerebellum": 5,
+      "Left Occipital Lobe": 23,
+      "Right Occipital Lobe": 22,
+      "Left Temporal Lobe": 4,
+      "Right Temporal Lobe": 13,
+      "Left Parietal Lobe": 28,
+      "Right Parietal Lobe": 25,
+      "Left Frontal Lobe": 14,
+      "Right Frontal Lobe": 9,
+      "Brain Stem": 18,
+      "Pituitary Gland": 24,
+    };
+
+    // Original pastel colors from mesh_download.py
+    const regionColors = {
+      "Cerebellum": [0.8, 0.7, 1.0],        // pastel purple
+      "Left Occipital Lobe": [0.7, 0.9, 1.0], // pastel blue
+      "Right Occipital Lobe": [0.7, 1.0, 0.8], // pastel teal
+      "Left Temporal Lobe": [1.0, 0.6, 0.5],   // pastel coral/orange
+      "Right Temporal Lobe": [1.0, 0.7, 0.8],  // pastel pink
+      "Left Parietal Lobe": [0.8, 1.0, 0.7],   // pastel green
+      "Right Parietal Lobe": [1.0, 1.0, 0.7],  // pastel yellow
+      "Left Frontal Lobe": [0.7, 0.8, 1.0],    // pastel periwinkle
+      "Right Frontal Lobe": [1.0, 0.85, 0.7],  // pastel peach
+      "Brain Stem": [0.9, 0.7, 1.0],           // pastel violet
+      "Pituitary Gland": [1.0, 0.7, 0.95],     // pastel magenta
+    };
+
+    function init() {
+      console.log("Initializing 3D scene...");
+      
+      // Scene setup
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x000000);
+
+      // Camera setup
+      camera = new THREE.PerspectiveCamera(
+        75,
+        window.innerWidth / window.innerHeight,
+        0.01,
+        1000
+      );
+      camera.position.set(0, 0, 0.025);
+      camera.lookAt(0, 0, 0);
+
+      // Renderer setup
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.body.appendChild(renderer.domElement);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+      directionalLight.position.set(10, 10, 5);
+      directionalLight.castShadow = true;
+      scene.add(directionalLight);
+
+      // Controls
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+
+      console.log("Scene initialized, loading brain model...");
+      
+      // Load brain model
+      loadBrainModel();
+    }
+
+    function loadBrainModel() {
+      console.log("Starting to load brain model...");
+      const loader = new THREE.GLTFLoader();
+      
+      // Add progress callback
+      const onProgress = function (xhr) {
+        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+        updateStatus(`Loading brain model: ${Math.round(xhr.loaded / xhr.total * 100)}%`);
+      };
+      
+      loader.load(
+        "/static/brain.gltf",
+        function (gltf) {
+          console.log("Brain model loaded successfully:", gltf);
+          brain = gltf.scene;
+          
+          // Count meshes for debugging
+          let meshCount = 0;
+          brain.traverse(function (child) {
+            if (child.isMesh) {
+              meshCount++;
+            }
+          });
+          console.log(`Found ${meshCount} meshes in brain model`);
+
+          // Process each mesh in the brain model
+          brain.traverse(function (child) {
+            if (child.isMesh) {
+              console.log("Processing mesh:", child.name || "unnamed");
+              child.geometry.computeVertexNormals();
+              
+              // Store original material
+              child.userData.originalMaterial = child.material.clone();
+              
+              // Create new material with pastel color
+              const meshIndex = brainMeshes.length;
+              const color = getRegionColor(meshIndex);
+              child.material = new THREE.MeshStandardMaterial({
+                color: new THREE.Color(color[0], color[1], color[2]),
+                roughness: 0.3,
+                metalness: 0.1,
+                transparent: true,
+                opacity: 0.9
+              });
+              
+              child.castShadow = true;
+              child.receiveShadow = true;
+              brainMeshes.push(child);
+            }
+          });
+
+          console.log(`Processed ${brainMeshes.length} brain meshes`);
+          
+          // Position and scale the brain
+          brain.scale.set(0.1, 0.1, 0.1);
+          brain.position.set(0, 0, 0);
+          scene.add(brain);
+
+          // Hide loading message
+          document.getElementById('loading').style.display = 'none';
+          
+          // Start animation loop
+          animate();
+          
+          updateStatus(`Brain model loaded successfully (${meshCount} meshes)`);
+        },
+        onProgress,
+        function (error) {
+          console.error("Error loading brain GLTF:", error);
+          updateStatus("Error loading brain model: " + error.message);
+          document.getElementById('loading').textContent = "Error loading brain model";
+          
+          // Create a simple fallback brain model
+          console.log("Creating fallback brain model...");
+          createFallbackBrain();
+        }
+      );
+    }
+
+    function getRegionColor(meshIndex) {
+      // Find which region this mesh corresponds to
+      for (const [regionName, index] of Object.entries(regionToMeshIndex)) {
+        if (index === meshIndex) {
+          return regionColors[regionName];
+        }
+      }
+      // Fallback color for unmapped meshes
+      return [0.85, 0.85, 0.85];
+    }
+
+    function highlightRegion(regionName) {
+      if (currentAnimation) {
+        stopAnimation();
+      }
+      
+      // Reset all regions to original colors and surface representation
+      resetAllRegions();
+      
+      // Find the mesh index for this region using the original mapping
+      const meshIndex = regionToMeshIndex[regionName];
+      
+      if (meshIndex !== undefined && brainMeshes[meshIndex]) {
+        const mesh = brainMeshes[meshIndex];
+        const originalColor = regionColors[regionName];
+        
+        // Store original material for restoration
+        if (!mesh.userData.originalMaterial) {
+          mesh.userData.originalMaterial = mesh.material.clone();
+        }
+        
+        // Create wireframe highlight material
+        const wireframeMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(originalColor[0], originalColor[1], originalColor[2]),
+          roughness: 0.2,
+          metalness: 0.3,
+          transparent: true,
+          opacity: 1.0,
+          wireframe: true,
+          wireframeLinewidth: 3
+        });
+        
+        mesh.material = wireframeMaterial;
+        highlightedRegion = regionName;
+        
+        // Add pulsing effect
+        animateHighlight(mesh, originalColor);
+        
+        updateStatus(`Highlighting ${regionName}`);
+        updateButtonStates(regionName, 'region');
+      } else {
+        console.warn(`Region ${regionName} not found or mesh index ${meshIndex} out of range`);
+        updateStatus(`Region ${regionName} not found`);
+      }
+    }
+
+    function animateHighlight(mesh, originalColor) {
+      let time = 0;
+      const pulseSpeed = 0.01;
+      
+      function pulse() {
+        if (highlightedRegion) {
+          time += pulseSpeed;
+          const intensity = 0.5 + 0.5 * Math.sin(time * 10);
+          const color = new THREE.Color(
+            intensity + (1 - intensity) * originalColor[0],
+            intensity + (1 - intensity) * originalColor[1],
+            intensity + (1 - intensity) * originalColor[2]
+          );
+          mesh.material.color = color;
+          // Keep wireframe enabled during pulsing
+          mesh.material.wireframe = true;
+          requestAnimationFrame(pulse);
+        }
+      }
+      pulse();
+    }
+
+    function animatePathway(pathwayName) {
+      if (currentAnimation) {
+        stopAnimation();
+      }
+      
+      resetAllRegions();
+      
+      const pathwayRegions = {
+        "listening": ["Brain Stem", "Left Temporal Lobe", "Right Temporal Lobe", "Left Parietal Lobe", "Right Parietal Lobe"],
+        "speaking": ["Left Frontal Lobe", "Right Frontal Lobe", "Left Temporal Lobe", "Brain Stem"],
+        "thinking": ["Left Frontal Lobe", "Right Frontal Lobe", "Left Parietal Lobe", "Right Parietal Lobe", "Left Temporal Lobe"]
+      };
+      
+      const regions = pathwayRegions[pathwayName];
+      if (regions) {
+        currentAnimation = {
+          type: 'pathway',
+          name: pathwayName,
+          regions: regions,
+          currentIndex: 0,
+          startTime: Date.now()
+        };
+        
+        updateStatus(`Animating ${pathwayName} pathway`);
+        updateButtonStates(pathwayName, 'pathway');
+        animatePathwayStep();
+      }
+    }
+
+    function animatePathwayStep() {
+      if (!currentAnimation || currentAnimation.type !== 'pathway') return;
+      
+      const animation = currentAnimation;
+      const regionName = animation.regions[animation.currentIndex];
+      const meshIndex = regionToMeshIndex[regionName];
+      
+      if (meshIndex !== undefined && brainMeshes[meshIndex]) {
+        const mesh = brainMeshes[meshIndex];
+        const originalColor = regionColors[regionName];
+        
+        // Store original material for restoration
+        if (!mesh.userData.originalMaterial) {
+          mesh.userData.originalMaterial = mesh.material.clone();
+        }
+        
+        // Highlight current region with wireframe
+        const wireframeMaterial = new THREE.MeshStandardMaterial({
+          color: new THREE.Color(0, 1, 1), // Cyan for pathway
+          roughness: 0.2,
+          metalness: 0.3,
+          transparent: true,
+          opacity: 1.0,
+          wireframe: true,
+          wireframeLinewidth: 3
+        });
+        
+        mesh.material = wireframeMaterial;
+        
+        // Move to next region after 1 second
+        setTimeout(() => {
+          if (currentAnimation && currentAnimation.type === 'pathway') {
+            animation.currentIndex = (animation.currentIndex + 1) % animation.regions.length;
+            animatePathwayStep();
+          }
+        }, 1000);
+      } else {
+        console.warn(`Region ${regionName} not found or mesh index ${meshIndex} out of range`);
+      }
+    }
+
+    function stopAnimation() {
+      if (currentAnimation) {
+        currentAnimation = null;
+      }
+      if (highlightedRegion) {
+        highlightedRegion = null;
+      }
+      resetAllRegions();
+      updateStatus("Animation stopped");
+      updateButtonStates(null, null);
+    }
+
+    function resetAllRegions() {
+      brainMeshes.forEach((mesh, index) => {
+        // Find which region this mesh corresponds to
+        let regionName = null;
+        for (const [name, meshIndex] of Object.entries(regionToMeshIndex)) {
+          if (meshIndex === index) {
+            regionName = name;
+            break;
+          }
+        }
+        
+        const color = regionName ? regionColors[regionName] : [0.85, 0.85, 0.85];
+        
+        // Restore original material or create new one
+        if (mesh.userData.originalMaterial) {
+          mesh.material = mesh.userData.originalMaterial.clone();
+        } else {
+          mesh.material = new THREE.MeshStandardMaterial({
+            color: new THREE.Color(color[0], color[1], color[2]),
+            roughness: 0.3,
+            metalness: 0.1,
+            transparent: true,
+            opacity: 0.9,
+            wireframe: false
+          });
+        }
+      });
+    }
+
+    function updateButtonStates(activeName, type) {
+      // Reset all buttons
+      document.querySelectorAll('.region-btn, .pathway-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Activate current button
+      if (activeName && type) {
+        const buttons = document.querySelectorAll(`.${type}-btn`);
+        buttons.forEach(btn => {
+          if (btn.textContent === activeName) {
+            btn.classList.add('active');
+          }
+        });
+      }
+    }
+
+    function updateStatus(message) {
+      document.getElementById('status').textContent = message;
+    }
+
+    function createFallbackBrain() {
+      console.log("Creating fallback brain model...");
+      
+      // Create a simple brain-like shape using basic geometry
+      const brainGeometry = new THREE.SphereGeometry(10, 32, 32);
+      const brainMaterial = new THREE.MeshStandardMaterial({
+        color: new THREE.Color(0.8, 0.7, 1.0),
+        roughness: 0.3,
+        metalness: 0.1,
+        transparent: true,
+        opacity: 0.9
+      });
+      
+      brain = new THREE.Mesh(brainGeometry, brainMaterial);
+      brain.castShadow = true;
+      brain.receiveShadow = true;
+      brainMeshes.push(brain);
+      
+      scene.add(brain);
+      
+      // Hide loading message
+      document.getElementById('loading').style.display = 'none';
+      
+      // Start animation loop
+      animate();
+      
+      updateStatus("Fallback brain model created");
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Chatbot functionality
+    function addChatMessage(message, isUser = false) {
+      const chatMessages = document.getElementById('chat-messages');
+      if (!chatMessages) {
+        console.error('Chat messages container not found');
+        return;
+      }
+      const messageDiv = document.createElement('div');
+      messageDiv.className = `chat-message ${isUser ? 'chat-user' : 'chat-bot'}`;
+      messageDiv.innerHTML = marked.parse(message);
+      chatMessages.appendChild(messageDiv);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function sendChatMessage() {
+      const input = document.getElementById('chat-input');
+      if (!input) {
+        console.error('Chat input not found');
+        return;
+      }
+      
+      const message = input.value.trim();
+      
+      if (message) {
+        addChatMessage(message, true);
+        input.value = '';
+        
+        // Show typing indicator as a placeholder div and store its id
+        const chatMessages = document.getElementById('chat-messages');
+        const placeholderDiv = document.createElement('div');
+        placeholderDiv.className = 'chat-message chat-bot';
+        placeholderDiv.textContent = 'Thinking...';
+        chatMessages.appendChild(placeholderDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        input.dataset.placeholderId = placeholderDiv.id = 'thinking-placeholder';
+        
+        // Call the Together API
+        callTogetherAPI(message);
+      }
+    }
+
+    function handleChatKeyPress(event) {
+      if (event.key === 'Enter') {
+        sendChatMessage();
+      }
+    }
+
+    async function callTogetherAPI(prompt) {
+      try {
+        console.log('Sending chat message:', prompt);
+        
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message: prompt })
+        });
+        
+        console.log('Chat API response status:', response.status);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Chat API response data:', data);
+          
+          // Update the placeholder with the response
+          const placeholder = document.getElementById('thinking-placeholder');
+          const input = document.getElementById('chat-input');
+          if (placeholder) {
+            placeholder.innerHTML = marked.parse(data.response);
+            placeholder.removeAttribute('id');
+            if (input) delete input.dataset.placeholderId;
+          } else {
+            addChatMessage(data.response, false);
+          }
+        } else {
+          const errorText = await response.text();
+          console.error('Chat API error response:', errorText);
+          throw new Error(`API call failed: ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Chat API error:', error);
+        
+        // Update the placeholder with the error message
+        const placeholder = document.getElementById('thinking-placeholder');
+        if (placeholder) {
+          placeholder.textContent = 'Sorry, I encountered an error. Please try again.';
+          placeholder.removeAttribute('id');
+        } else {
+          addChatMessage('Sorry, I encountered an error. Please try again.', false);
+        }
+      }
+    }
+
+    // Initialize the application
+    init();
+  </script>
+</body>
+</html>
