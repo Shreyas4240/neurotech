@@ -7,6 +7,7 @@ import uvicorn
 import os
 import requests
 from typing import List
+from pathlib import Path
 
 try:
     from huggingface_hub import InferenceClient
@@ -14,6 +15,10 @@ except ImportError:  # optional — only needed for /api/chat
     InferenceClient = None
 
 app = FastAPI(title="3D Brain Visualization", description="Interactive 3D brain model with pathway animations")
+
+# Get the directory where this file is located
+BASE_DIR = Path(__file__).parent
+STATIC_DIR = BASE_DIR / "static"
 
 # Add CORS middleware for web development
 app.add_middleware(
@@ -25,7 +30,7 @@ app.add_middleware(
 )
 
 # Serve static files (HTML, GLTF, etc.)
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 # Brain region mappings (from your mesh_download.py)
 region_to_node = {
@@ -136,20 +141,12 @@ manager = ConnectionManager()
 
 @app.get("/", response_class=HTMLResponse)
 async def read_root():
-    return FileResponse("static/index.html")
+    return FileResponse(str(STATIC_DIR / "index.html"))
 
 @app.get("/bci", response_class=HTMLResponse)
 async def bci_page():
     """Closed-loop motor-imagery BCI demo (connects to decode_live.py :8765)."""
-    return FileResponse("static/bci.html")
-
-@app.get("/test", response_class=HTMLResponse)
-async def test_page():
-    return FileResponse("static/test.html")
-
-@app.get("/wireframe-test", response_class=HTMLResponse)
-async def wireframe_test_page():
-    return FileResponse("static/wireframe-test.html")
+    return FileResponse(str(STATIC_DIR / "bci.html"))
 
 @app.get("/api/regions")
 async def get_regions():
