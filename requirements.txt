@@ -1,0 +1,13 @@
+# digi_bci — closed-loop motor imagery BCI
+mne>=1.6
+pylsl>=1.16
+numpy>=1.24
+scipy>=1.10
+scikit-learn>=1.3
+joblib>=1.3
+websockets>=12.0
+
+# brain_replica frontend server
+fastapi>=0.110
+uvicorn[standard]>=0.27
+aiofiles>=23.0
