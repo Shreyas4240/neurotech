@@ -1,0 +1,2 @@
+[tool.vercel]
+entrypoint = "brain_replica.main:app"
