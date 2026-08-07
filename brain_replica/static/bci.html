@@ -232,7 +232,7 @@
   <div id="controls">
     <div class="control-section">
       <h3>Motor Imagery BCI</h3>
-      <p>Live CSP + LDA decode from an LSL EEG stream. Imagined fist movement drives the cortex highlight and cursor.</p>
+      <p>Live CSP + LDA decode from an LSL EEG stream. Imagined fist movement drives the cortex highlight and cursor. <em>Demo mode activates automatically when decoder is unavailable.</em></p>
       <div style="margin-top: 8px;">
         <span class="intent-pill" id="pill-left">Left fist</span>
         <span class="intent-pill" id="pill-right">Right fist</span>
@@ -336,6 +336,8 @@
     let pulseTime = 0;
 
     const WS_URL = `ws://${location.hostname || 'localhost'}:8765`;
+    let demoMode = false;
+    let demoInterval = null;
 
     function init() {
       scene = new THREE.Scene();
@@ -432,16 +434,62 @@
       document.getElementById('status').textContent = message;
     }
 
+    function startDemoMode() {
+      demoMode = true;
+      updateStatus('Demo mode — simulating predictions');
+      const predictions = ['left', 'right', 'rest'];
+      let idx = 0;
+      
+      demoInterval = setInterval(() => {
+        const pred = predictions[idx];
+        idx = (idx + 1) % predictions.length;
+        const conf = 0.7 + Math.random() * 0.25;
+        
+        const demoMsg = {
+          type: 'prediction',
+          prediction: pred,
+          confidence: conf,
+          probs: {
+            left: pred === 'left' ? conf : Math.random() * 0.2,
+            right: pred === 'right' ? conf : Math.random() * 0.2,
+            rest: pred === 'rest' ? conf : Math.random() * 0.2
+          },
+          rolling_accuracy: 0.85 + Math.random() * 0.1,
+          n_scored: 50 + Math.floor(Math.random() * 20),
+          marker: pred === 'left' ? 'T1' : pred === 'right' ? 'T2' : 'T0',
+          band_power: {
+            C3: 10 + Math.random() * 5,
+            C4: 10 + Math.random() * 5
+          }
+        };
+        applyPrediction(demoMsg);
+      }, 2000);
+    }
+
     function connectWS() {
       updateStatus('Connecting to decoder on :8765…');
       const ws = new WebSocket(WS_URL);
 
-      ws.onopen = () => updateStatus('Live — CSP+LDA decode streaming');
-      ws.onclose = () => {
-        updateStatus('Decoder disconnected — reconnecting…');
-        setTimeout(connectWS, 1500);
+      ws.onopen = () => {
+        updateStatus('Live — CSP+LDA decode streaming');
+        if (demoInterval) {
+          clearInterval(demoInterval);
+          demoInterval = null;
+          demoMode = false;
+        }
       };
-      ws.onerror = () => updateStatus('Decoder connection error');
+      ws.onclose = () => {
+        if (!demoMode) {
+          updateStatus('Decoder unavailable — starting demo mode');
+          setTimeout(() => startDemoMode(), 1000);
+        }
+      };
+      ws.onerror = () => {
+        if (!demoMode) {
+          updateStatus('Decoder connection error — starting demo mode');
+          setTimeout(() => startDemoMode(), 1000);
+        }
+      };
       ws.onmessage = (ev) => {
         try {
           const msg = JSON.parse(ev.data);
@@ -450,6 +498,14 @@
           console.warn('bad message', e);
         }
       };
+      
+      // If WebSocket fails to connect after 3 seconds, start demo mode
+      setTimeout(() => {
+        if (ws.readyState !== WebSocket.OPEN && !demoMode) {
+          ws.close();
+          startDemoMode();
+        }
+      }, 3000);
     }
 
     function applyPrediction(msg) {
