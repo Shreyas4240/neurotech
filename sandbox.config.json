@@ -1,6 +1,0 @@
-{
-  "container": {
-    "port": 8765,
-    "startCommand": "python decode_live.py --mock"
-  }
-}

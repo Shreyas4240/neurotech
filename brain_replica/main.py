@@ -209,18 +209,52 @@ async def chat_with_ai(request: Request):
         user_message = body.get("message", "")
         if not user_message:
             return {"error": "No message provided"}
-        
+
         # Call the Hugging Face API
         response = call_hf_model(user_message)
-        
+
         if response:
             return {"response": response}
         else:
             return {"response": "Sorry, I couldn't get a response from the AI model."}
-            
+
     except Exception as e:
         print(f"Chat API error: {e}")
         return {"error": f"Chat failed: {str(e)}"}
+
+@app.get("/api/bci/prediction")
+async def get_bci_prediction():
+    """Get mock BCI prediction for Vercel polling (serverless-compatible)"""
+    import time
+    import random
+    
+    # Cycle through predictions like the original mock mode
+    predictions = ['left', 'right', 'rest']
+    cycle_length = 10  # Hold each prediction for 10 requests (2.5s at 250ms polling)
+    current_time = int(time.time() * 1000)  # Current time in ms
+    cycle_index = (current_time // 2500) % len(predictions)  # Change every 2.5s
+    pred = predictions[cycle_index]
+    
+    conf = 0.7 + random.random() * 0.25
+    
+    return {
+        "type": "prediction",
+        "prediction": pred,
+        "confidence": conf,
+        "probs": {
+            "left": conf if pred == "left" else random.random() * 0.2,
+            "right": conf if pred == "right" else random.random() * 0.2,
+            "rest": conf if pred == "rest" else random.random() * 0.2
+        },
+        "rolling_accuracy": 0.85 + random.random() * 0.1,
+        "n_scored": 50 + int(random.random() * 20),
+        "marker": "T1" if pred == "left" else "T2" if pred == "right" else "T0",
+        "band_power": {
+            "C3": 10 + random.random() * 5,
+            "C4": 10 + random.random() * 5
+        },
+        "timestamp": time.time()
+    }
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
