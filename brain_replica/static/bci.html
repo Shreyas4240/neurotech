@@ -335,7 +335,8 @@
     let glowIntensity = { leftHand: 0, rightHand: 0 };
     let pulseTime = 0;
 
-    const WS_URL = `ws://${location.hostname || 'localhost'}:8765`;
+    const WS_PROTOCOL = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const WS_URL = `${WS_PROTOCOL}//${location.hostname || 'localhost'}:8765`;
     let demoMode = false;
     let demoInterval = null;
 
@@ -467,6 +468,13 @@
     }
 
     function connectWS() {
+      // Skip WebSocket connection on Vercel or when using HTTPS (no local decoder)
+      if (location.hostname.includes('vercel.app') || location.protocol === 'https:') {
+        updateStatus('Running on cloud — starting demo mode');
+        setTimeout(() => startDemoMode(), 500);
+        return;
+      }
+
       updateStatus('Connecting to decoder on :8765…');
       const ws = new WebSocket(WS_URL);
 
