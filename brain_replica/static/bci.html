@@ -336,7 +336,9 @@
     let pulseTime = 0;
 
     const WS_PROTOCOL = location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const WS_URL = `${WS_PROTOCOL}//${location.hostname || 'localhost'}:8765`;
+    // Use environment variable or default to localhost
+    const WS_HOST = typeof DECODER_URL !== 'undefined' ? DECODER_URL : `${location.hostname || 'localhost'}:8765`;
+    const WS_URL = `${WS_PROTOCOL}//${WS_HOST}`;
     let demoMode = false;
     let demoInterval = null;
 

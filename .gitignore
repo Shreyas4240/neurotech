@@ -6,3 +6,5 @@ mne_data/
 *.egg-info/
 .pytest_cache/
 brain_replica/__pycache__/
+.vercel
+.env

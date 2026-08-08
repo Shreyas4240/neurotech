@@ -1,0 +1,11 @@
+{
+  "install": "pip install -r requirements.txt",
+  "start": "python decode_live.py --mock",
+  "watch": {
+    "ignore": [
+      "mne_data",
+      ".venv",
+      "__pycache__"
+    ]
+  }
+}

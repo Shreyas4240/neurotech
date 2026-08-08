@@ -1,5 +1,5 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import json
@@ -146,7 +146,15 @@ async def read_root():
 @app.get("/bci", response_class=HTMLResponse)
 async def bci_page():
     """Closed-loop motor-imagery BCI demo (connects to decode_live.py :8765)."""
-    return FileResponse(str(STATIC_DIR / "bci.html"))
+    # Read the HTML file and inject decoder URL if provided
+    decoder_url = os.environ.get("DECODER_URL", "")
+    html_content = (STATIC_DIR / "bci.html").read_text()
+    if decoder_url:
+        html_content = html_content.replace(
+            "const WS_HOST = typeof DECODER_URL !== 'undefined' ? DECODER_URL : `${location.hostname || 'localhost'}:8765`;",
+            f"const WS_HOST = '{decoder_url}';"
+        )
+    return Response(content=html_content, media_type="text/html")
 
 @app.get("/api/regions")
 async def get_regions():
