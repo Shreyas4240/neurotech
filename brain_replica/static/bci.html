@@ -440,10 +440,11 @@
       updateStatus('Demo mode — simulating predictions');
       const predictions = ['left', 'right', 'rest'];
       let idx = 0;
+      let updatesPerClass = 10; // Hold each class for ~2.5 seconds like original mock
+      let updateCount = 0;
       
       demoInterval = setInterval(() => {
         const pred = predictions[idx];
-        idx = (idx + 1) % predictions.length;
         const conf = 0.7 + Math.random() * 0.25;
         
         const demoMsg = {
@@ -464,7 +465,13 @@
           }
         };
         applyPrediction(demoMsg);
-      }, 2000);
+        
+        updateCount++;
+        if (updateCount >= updatesPerClass) {
+          idx = (idx + 1) % predictions.length;
+          updateCount = 0;
+        }
+      }, 250); // Update every 250ms, hold each class for 2.5s (10 updates)
     }
 
     function connectWS() {
