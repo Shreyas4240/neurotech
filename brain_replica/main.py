@@ -227,16 +227,22 @@ async def get_bci_prediction():
     """Get mock BCI prediction for Vercel polling (serverless-compatible)"""
     import time
     import random
-    
+
     # Cycle through predictions like the original mock mode
     predictions = ['left', 'right', 'rest']
     cycle_length = 10  # Hold each prediction for 10 requests (2.5s at 250ms polling)
     current_time = int(time.time() * 1000)  # Current time in ms
     cycle_index = (current_time // 2500) % len(predictions)  # Change every 2.5s
     pred = predictions[cycle_index]
-    
+
     conf = 0.7 + random.random() * 0.25
-    
+
+    # More realistic values
+    trial_number = 50 + (current_time // 10000)  # Increment trial every 10 seconds
+    rolling_acc = 0.70 + random.random() * 0.06  # 70-76%
+    c3_voltage = 90 + random.random() * 360  # 90-450 mV
+    c4_voltage = 90 + random.random() * 360  # 90-450 mV
+
     return {
         "type": "prediction",
         "prediction": pred,
@@ -246,12 +252,12 @@ async def get_bci_prediction():
             "right": conf if pred == "right" else random.random() * 0.2,
             "rest": conf if pred == "rest" else random.random() * 0.2
         },
-        "rolling_accuracy": 0.85 + random.random() * 0.1,
-        "n_scored": 50 + int(random.random() * 20),
+        "rolling_accuracy": rolling_acc,
+        "n_scored": trial_number,
         "marker": "T1" if pred == "left" else "T2" if pred == "right" else "T0",
         "band_power": {
-            "C3": 10 + random.random() * 5,
-            "C4": 10 + random.random() * 5
+            "C3": c3_voltage,
+            "C4": c4_voltage
         },
         "timestamp": time.time()
     }
