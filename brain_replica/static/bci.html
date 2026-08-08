@@ -463,7 +463,6 @@
       let idx = 0;
       let updatesPerClass = 10; // Hold each class for ~2.5 seconds like original mock
       let updateCount = 0;
-      let trialNumber = 50;
 
       demoInterval = setInterval(() => {
         const pred = predictions[idx];
@@ -478,12 +477,12 @@
             right: pred === 'right' ? conf : Math.random() * 0.2,
             rest: pred === 'rest' ? conf : Math.random() * 0.2
           },
-          rolling_accuracy: 0.70 + Math.random() * 0.06, // 70-76%
-          n_scored: trialNumber,
+          rolling_accuracy: 0.85 + Math.random() * 0.1,
+          n_scored: 50 + Math.floor(Math.random() * 20),
           marker: pred === 'left' ? 'T1' : pred === 'right' ? 'T2' : 'T0',
           band_power: {
-            C3: 90 + Math.random() * 360, // 90-450 mV
-            C4: 90 + Math.random() * 360  // 90-450 mV
+            C3: 10 + Math.random() * 5,
+            C4: 10 + Math.random() * 5
           }
         };
         applyPrediction(demoMsg);
@@ -492,7 +491,6 @@
         if (updateCount >= updatesPerClass) {
           idx = (idx + 1) % predictions.length;
           updateCount = 0;
-          trialNumber++; // Increment trial when switching predictions
         }
       }, 250); // Update every 250ms, hold each class for 2.5s (10 updates)
     }

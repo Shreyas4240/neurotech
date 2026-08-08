@@ -238,7 +238,7 @@ async def get_bci_prediction():
     conf = 0.7 + random.random() * 0.25
 
     # More realistic values
-    trial_number = 50 + (current_time // 10000)  # Increment trial every 10 seconds
+    trial_number = 50 + (current_time // 25000)  # Increment trial every 25 seconds
     rolling_acc = 0.70 + random.random() * 0.06  # 70-76%
     c3_voltage = 90 + random.random() * 360  # 90-450 mV
     c4_voltage = 90 + random.random() * 360  # 90-450 mV
