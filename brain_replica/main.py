@@ -237,9 +237,7 @@ async def get_bci_prediction():
 
     conf = 0.7 + random.random() * 0.25
 
-    # More realistic values
-    current_seconds = int(time.time())  # Use seconds instead of ms
-    trial_number = 50 + (current_seconds // 30)  # Increment trial every 30 seconds
+    # More realistic values (trial number tracked client-side)
     rolling_acc = 0.70 + random.random() * 0.06  # 70-76%
     c3_voltage = 90 + random.random() * 360  # 90-450 mV
     c4_voltage = 90 + random.random() * 360  # 90-450 mV
@@ -254,7 +252,6 @@ async def get_bci_prediction():
             "rest": conf if pred == "rest" else random.random() * 0.2
         },
         "rolling_accuracy": rolling_acc,
-        "n_scored": trial_number,
         "marker": "T1" if pred == "left" else "T2" if pred == "right" else "T0",
         "band_power": {
             "C3": c3_voltage,

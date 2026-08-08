@@ -442,16 +442,25 @@
     function startPollingMode() {
       pollingMode = true;
       updateStatus('Polling mode — fetching predictions from server');
-      
+      let trialNumber = 0;
+      let lastTrialIncrement = Date.now();
+
       pollingInterval = setInterval(async () => {
         try {
           const response = await fetch('/api/bci/prediction');
           if (response.ok) {
             const msg = await response.json();
+            msg.n_scored = trialNumber; // Add trial number client-side
             applyPrediction(msg);
           }
         } catch (e) {
           console.warn('Polling error:', e);
+        }
+
+        // Increment trial number every 3 seconds
+        if (Date.now() - lastTrialIncrement >= 3000) {
+          trialNumber++;
+          lastTrialIncrement = Date.now();
         }
       }, 250); // Poll every 250ms like the original decoder
     }
@@ -463,6 +472,8 @@
       let idx = 0;
       let updatesPerClass = 10; // Hold each class for ~2.5 seconds like original mock
       let updateCount = 0;
+      let trialNumber = 0;
+      let lastTrialIncrement = Date.now();
 
       demoInterval = setInterval(() => {
         const pred = predictions[idx];
@@ -478,7 +489,7 @@
             rest: pred === 'rest' ? conf : Math.random() * 0.2
           },
           rolling_accuracy: 0.85 + Math.random() * 0.1,
-          n_scored: 50 + Math.floor(Math.random() * 20),
+          n_scored: trialNumber,
           marker: pred === 'left' ? 'T1' : pred === 'right' ? 'T2' : 'T0',
           band_power: {
             C3: 10 + Math.random() * 5,
@@ -486,6 +497,12 @@
           }
         };
         applyPrediction(demoMsg);
+
+        // Increment trial number every 3 seconds
+        if (Date.now() - lastTrialIncrement >= 3000) {
+          trialNumber++;
+          lastTrialIncrement = Date.now();
+        }
 
         updateCount++;
         if (updateCount >= updatesPerClass) {
