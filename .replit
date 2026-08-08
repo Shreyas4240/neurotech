@@ -1,8 +1,0 @@
-["run"]
-command = "python decode_live.py --mock"
-
-[nix]
-channel = "stable-23_11"
-
-[deployment]
-run = ["python", "decode_live.py", "--mock"]
